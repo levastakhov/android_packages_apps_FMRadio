@@ -81,14 +81,14 @@ jobs:
           include ':app'
           EOF
 
-          # Создаем структуру каталогов для заглушек скрытых API
+          # Создаем структуру каталогов для заглушек
           mkdir -p app/src/stubs/java/android/media
           mkdir -p app/src/stubs/java/android/os/storage
           mkdir -p app/src/stubs/java/android/view
+          mkdir -p app/src/stubs/java/android/hardware/display
           mkdir -p app/src/stubs/java/com/android/internal
 
-          # 1. Заглушка com.android.internal.R
-          mkdir -p app/src/stubs/java/com/android/internal
+          # 1. com.android.internal.R
           cat << 'EOF' > app/src/stubs/java/com/android/internal/R.java
           package com.android.internal;
           public final class R {
@@ -98,7 +98,7 @@ jobs:
           }
           EOF
 
-          # 2. Расширение AudioManager / AudioSystem / AudioPort
+          # 2. AudioPort / AudioPatch infrastructure
           cat << 'EOF' > app/src/stubs/java/android/media/AudioPort.java
           package android.media;
           public class AudioPort {
@@ -152,7 +152,7 @@ jobs:
           }
           EOF
 
-          # Внедряем скрытые методы напрямую через мок AudioManager
+          # Полная заглушка AudioManager со стандартными и скрытыми API
           cat << 'EOF' > app/src/stubs/java/android/media/AudioManager.java
           package android.media;
           import java.util.ArrayList;
@@ -160,6 +160,17 @@ jobs:
           public class AudioManager {
               public static final int SUCCESS = 0;
               public static final int ERROR = -1;
+              public static final int STREAM_MUSIC = 3;
+
+              public static final int AUDIOFOCUS_GAIN = 1;
+              public static final int AUDIOFOCUS_LOSS = -1;
+              public static final int AUDIOFOCUS_LOSS_TRANSIENT = -2;
+              public static final int AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK = -3;
+              public static final int AUDIOFOCUS_REQUEST_GRANTED = 1;
+
+              public interface OnAudioFocusChangeListener {
+                  void onAudioFocusChange(int focusChange);
+              }
 
               public interface OnAudioPortUpdateListener {
                   void onAudioPortListUpdate(AudioPort[] portList);
@@ -175,10 +186,26 @@ jobs:
               public void unregisterAudioPortUpdateListener(OnAudioPortUpdateListener l) {}
               public static int setForceUse(int usage, int config) { return 0; }
               public static int getForceUse(int usage) { return 0; }
+              public boolean isWiredHeadsetOn() { return false; }
+              public void setParameters(String keys) {}
+              public String getParameters(String keys) { return ""; }
+              public int requestAudioFocus(OnAudioFocusChangeListener l, int streamType, int durationHint) { return AUDIOFOCUS_REQUEST_GRANTED; }
+              public int abandonAudioFocus(OnAudioFocusChangeListener l) { return AUDIOFOCUS_REQUEST_GRANTED; }
           }
           EOF
 
-          # 3. StorageManager
+          # 3. DisplayManagerGlobal
+          cat << 'EOF' > app/src/stubs/java/android/hardware/display/DisplayManagerGlobal.java
+          package android.hardware.display;
+          import android.view.DisplayInfo;
+
+          public class DisplayManagerGlobal {
+              public static DisplayManagerGlobal getInstance() { return new DisplayManagerGlobal(); }
+              public DisplayInfo getDisplayInfo(int displayId) { return new DisplayInfo(); }
+          }
+          EOF
+
+          # 4. StorageManager
           cat << 'EOF' > app/src/stubs/java/android/os/storage/StorageManager.java
           package android.os.storage;
 
@@ -188,7 +215,7 @@ jobs:
           }
           EOF
 
-          # 4. DisplayInfo & Mode
+          # 5. DisplayInfo
           cat << 'EOF' > app/src/stubs/java/android/view/DisplayInfo.java
           package android.view;
 
@@ -201,17 +228,6 @@ jobs:
               }
               
               public Mode getMode() { return new Mode(); }
-          }
-          EOF
-
-          # 5. MediaRecorder.AudioSource extra constants
-          cat << 'EOF' > app/src/stubs/java/android/media/MediaRecorder.java
-          package android.media;
-
-          public class MediaRecorder {
-              public final class AudioSource {
-                  public static final int RADIO_TUNER = 1998;
-              }
           }
           EOF
 
