@@ -65,7 +65,7 @@ jobs:
               sourceSets {
                   main {
                       manifest.srcFile '../AndroidManifest.xml'
-                      java.srcDirs = ['../src', 'src/stubs/java']
+                      java.srcDirs = ['src/stubs/java', '../src']
                       res.srcDirs = ['../res']
                   }
               }
@@ -81,11 +81,24 @@ jobs:
           include ':app'
           EOF
 
-          # Генерируем заглушки для скрытых системных API AOSP (android.media.* и android.hardware.display.*)
+          # Создаем структуру каталогов для заглушек скрытых API
           mkdir -p app/src/stubs/java/android/media
-          mkdir -p app/src/stubs/java/android/hardware/display
+          mkdir -p app/src/stubs/java/android/os/storage
           mkdir -p app/src/stubs/java/android/view
+          mkdir -p app/src/stubs/java/com/android/internal
 
+          # 1. Заглушка com.android.internal.R
+          mkdir -p app/src/stubs/java/com/android/internal
+          cat << 'EOF' > app/src/stubs/java/com/android/internal/R.java
+          package com.android.internal;
+          public final class R {
+              public static final class dimen {
+                  public static int status_bar_height = 0;
+              }
+          }
+          EOF
+
+          # 2. Расширение AudioManager / AudioSystem / AudioPort
           cat << 'EOF' > app/src/stubs/java/android/media/AudioPort.java
           package android.media;
           public class AudioPort {
@@ -102,7 +115,9 @@ jobs:
 
           cat << 'EOF' > app/src/stubs/java/android/media/AudioPortConfig.java
           package android.media;
-          public class AudioPortConfig {}
+          public class AudioPortConfig {
+              public AudioPort port() { return null; }
+          }
           EOF
 
           cat << 'EOF' > app/src/stubs/java/android/media/AudioDevicePortConfig.java
@@ -137,34 +152,66 @@ jobs:
           }
           EOF
 
-          cat << 'EOF' > app/src/stubs/java/android/media/AudioManagerStubs.java
+          # Внедряем скрытые методы напрямую через мок AudioManager
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioManager.java
           package android.media;
-          EOF
+          import java.util.ArrayList;
 
-          cat << 'EOF' > app/src/stubs/java/android/hardware/display/DisplayManagerGlobal.java
-          package android.hardware.display;
-          import android.view.DisplayInfo;
-          public class DisplayManagerGlobal {
-              public static DisplayManagerGlobal getInstance() { return null; }
-              public DisplayInfo getDisplayInfo(int displayId) { return null; }
+          public class AudioManager {
+              public static final int SUCCESS = 0;
+              public static final int ERROR = -1;
+
+              public interface OnAudioPortUpdateListener {
+                  void onAudioPortListUpdate(AudioPort[] portList);
+                  void onAudioPatchListUpdate(AudioPatch[] patchList);
+                  void onServiceDied();
+              }
+
+              public int listAudioPorts(ArrayList<AudioPort> ports) { return 0; }
+              public int listAudioPatches(ArrayList<AudioPatch> patches) { return 0; }
+              public int createAudioPatch(AudioPatch[] patch, AudioPortConfig[] sources, AudioPortConfig[] sinks) { return 0; }
+              public int releaseAudioPatch(AudioPatch patch) { return 0; }
+              public void registerAudioPortUpdateListener(OnAudioPortUpdateListener l) {}
+              public void unregisterAudioPortUpdateListener(OnAudioPortUpdateListener l) {}
+              public static int setForceUse(int usage, int config) { return 0; }
+              public static int getForceUse(int usage) { return 0; }
           }
           EOF
 
+          # 3. StorageManager
+          cat << 'EOF' > app/src/stubs/java/android/os/storage/StorageManager.java
+          package android.os.storage;
+
+          public class StorageManager {
+              public String getVolumeState(String mountPoint) { return ""; }
+              public String[] getVolumePaths() { return new String[0]; }
+          }
+          EOF
+
+          # 4. DisplayInfo & Mode
           cat << 'EOF' > app/src/stubs/java/android/view/DisplayInfo.java
           package android.view;
+
           public class DisplayInfo {
               public int logicalWidth;
               public int logicalHeight;
+              
+              public static class Mode {
+                  public float getRefreshRate() { return 60.0f; }
+              }
+              
+              public Mode getMode() { return new Mode(); }
           }
           EOF
 
-          # Добавляем OnAudioPortUpdateListener в AudioManager если его нет
-          cat << 'EOF' > app/src/stubs/java/android/media/OnAudioPortUpdateListener.java
+          # 5. MediaRecorder.AudioSource extra constants
+          cat << 'EOF' > app/src/stubs/java/android/media/MediaRecorder.java
           package android.media;
-          public interface OnAudioPortUpdateListener {
-              void onAudioPortListUpdate(AudioPort[] portList);
-              void onAudioPatchListUpdate(AudioPatch[] patchList);
-              void onServiceDied();
+
+          public class MediaRecorder {
+              public final class AudioSource {
+                  public static final int RADIO_TUNER = 1998;
+              }
           }
           EOF
 
