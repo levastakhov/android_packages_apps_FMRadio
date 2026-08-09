@@ -19,6 +19,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Patch Resource Mismatch
+        run: |
+          echo "Fixing R.string vs R.drawable mismatch for btn_discard_recording..."
+          find src -type f -name "*.java" -exec sed -i 's/R\.string\.btn_discard_recording/R.drawable.btn_discard_recording/g' {} +
+
       - name: Generate Gradle Project Structure & Hidden API Stubs
         run: |
           cat << 'EOF' > build.gradle
