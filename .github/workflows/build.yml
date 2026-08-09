@@ -98,7 +98,29 @@ jobs:
           }
           EOF
 
-          # 2. AudioPort / AudioPatch infrastructure
+          # 2. MediaRecorder Stub (для AudioSource.RADIO_TUNER)
+          cat << 'EOF' > app/src/stubs/java/android/media/MediaRecorder.java
+          package android.media;
+
+          public class MediaRecorder {
+              public final class AudioSource {
+                  public static final int DEFAULT = 0;
+                  public static final int MIC = 1;
+                  public static final int VOICE_UPLINK = 2;
+                  public static final int VOICE_DOWNLINK = 3;
+                  public static final int VOICE_CALL = 4;
+                  public static final int CAMCORDER = 5;
+                  public static final int VOICE_RECOGNITION = 6;
+                  public static final int VOICE_COMMUNICATION = 7;
+                  public static final int REMOTE_SUBMIX = 8;
+                  public static final int UNPROCESSED = 9;
+                  public static final int VOICE_PERFORMANCE = 10;
+                  public static final int RADIO_TUNER = 1998;
+              }
+          }
+          EOF
+
+          # 3. AudioPort / AudioPatch infrastructure
           cat << 'EOF' > app/src/stubs/java/android/media/AudioPort.java
           package android.media;
           public class AudioPort {
@@ -152,7 +174,7 @@ jobs:
           }
           EOF
 
-          # Полная заглушка AudioManager со стандартными и скрытыми API
+          # 4. AudioManager
           cat << 'EOF' > app/src/stubs/java/android/media/AudioManager.java
           package android.media;
           import java.util.ArrayList;
@@ -194,7 +216,7 @@ jobs:
           }
           EOF
 
-          # 3. DisplayManagerGlobal
+          # 5. DisplayManagerGlobal
           cat << 'EOF' > app/src/stubs/java/android/hardware/display/DisplayManagerGlobal.java
           package android.hardware.display;
           import android.view.DisplayInfo;
@@ -205,7 +227,7 @@ jobs:
           }
           EOF
 
-          # 4. StorageManager
+          # 6. StorageManager
           cat << 'EOF' > app/src/stubs/java/android/os/storage/StorageManager.java
           package android.os.storage;
 
@@ -215,7 +237,7 @@ jobs:
           }
           EOF
 
-          # 5. DisplayInfo
+          # 7. DisplayInfo
           cat << 'EOF' > app/src/stubs/java/android/view/DisplayInfo.java
           package android.view;
 
