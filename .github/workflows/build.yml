@@ -39,7 +39,7 @@ jobs:
           }
           EOF
 
-          mkdir -p app/src/main
+          mkdir -p app
           cat << 'EOF' > app/build.gradle
           plugins {
               id 'com.android.application'
@@ -64,9 +64,9 @@ jobs:
 
               sourceSets {
                   main {
-                      manifest.srcFile 'AndroidManifest.xml'
-                      java.srcDirs = ['src']
-                      res.srcDirs = ['res']
+                      manifest.srcFile '../AndroidManifest.xml'
+                      java.srcDirs = ['../src']
+                      res.srcDirs = ['../res']
                   }
               }
               
@@ -81,7 +81,7 @@ jobs:
           include ':app'
           EOF
 
-          # Генерируем wrapper конфиг вручную, чтобы НЕ вызывать системный Gradle 9
+          # Генерируем wrapper-конфиг напрямую
           mkdir -p gradle/wrapper
           cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
