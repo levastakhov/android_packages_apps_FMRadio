@@ -1,32 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-     Copyright (C) 2014 The Android Open Source Project
-
-     Licensed under the Apache License, Version 2.0 (the "License");
-     you may not use this file except in compliance with the License.
-     You may obtain a copy of the License at
-
-          http://www.apache.org/licenses/LICENSE-2.0
-
-     Unless required by applicable law or agreed to in writing, software
-     distributed under the License is distributed on an "AS IS" BASIS,
-     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-     See the License for the specific language governing permissions and
-     limitations under the License.
--->
-
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.fmradio"
-    android:sharedUserId="android.uid.system"
-    android:versionCode="2"
-    android:versionName="2.0" >
+    android:sharedUserId="android.uid.system">
 
-    <!-- FM uses AudioPatch which is new in sdk 21 -->
     <uses-sdk
-        android:minSdkVersion="21"
-        android:targetSdkVersion="23"
-        android:usesCleartextTraffic="false" />
+        android:minSdkVersion="30"
+        android:targetSdkVersion="23" />
 
+    <!-- Разрешения системного уровня -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FM_RADIO" />
@@ -42,50 +23,58 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
+        android:extractNativeLibs="false"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name" >
+        android:label="@string/app_name"
+        android:usesCleartextTraffic="false"
+        android:usesNonSdkApi="true">
 
+        <!-- Главный экран приложения -->
         <activity
-            android:name=".FmMainActivity"
+            android:name="com.android.fmradio.FmMainActivity"
             android:label="@string/app_name"
             android:launchMode="standard"
             android:theme="@style/AppTheme"
-            android:usesCleartextTraffic="false" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Экран избранных станций -->
         <activity
-            android:name=".FmFavoriteActivity"
+            android:name="com.android.fmradio.FmFavoriteActivity"
             android:configChanges="screenSize"
             android:label="@string/station_title"
             android:launchMode="singleTask"
             android:theme="@style/LightTheme"
-            android:windowSoftInputMode="stateAlwaysHidden" >
-        </activity>
+            android:exported="false"
+            android:windowSoftInputMode="stateAlwaysHidden" />
 
+        <!-- Фоновый сервис управления FM-чипом -->
         <service
-            android:name=".FmService"
-            android:exported="false" >
+            android:name="com.android.fmradio.FmService"
+            android:exported="false">
             <intent-filter>
                 <action android:name="com.android.fmradio.IFmRadioService" />
             </intent-filter>
         </service>
 
+        <!-- Провайдер баз данных станций -->
         <provider
-            android:name=".FmProvider"
+            android:name="com.android.fmradio.FmProvider"
             android:authorities="com.android.fmradio"
-            android:exported="false" >
-        </provider>
+            android:exported="false" />
 
+        <!-- Экран записи эфира -->
         <activity
-            android:name=".FmRecordActivity"
+            android:name="com.android.fmradio.FmRecordActivity"
             android:label="@string/record_title"
+            android:launchMode="singleTask"
             android:theme="@style/LightTheme"
-            android:launchMode="singleTask" >
-        </activity>
-    </application>
+            android:exported="false" />
 
+    </application>
 </manifest>
