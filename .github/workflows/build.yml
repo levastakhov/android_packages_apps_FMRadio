@@ -19,7 +19,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Generate Gradle Project Structure
+      - name: Generate Gradle Project Structure & Hidden API Stubs
         run: |
           cat << 'EOF' > build.gradle
           buildscript {
@@ -46,11 +46,11 @@ jobs:
           }
 
           android {
-              namespace 'com.caf.fmradio'
+              namespace 'com.android.fmradio'
               compileSdk 29
 
               defaultConfig {
-                  applicationId "com.caf.fmradio"
+                  applicationId "com.android.fmradio"
                   minSdk 26
                   targetSdk 29
                   versionCode 1
@@ -65,7 +65,7 @@ jobs:
               sourceSets {
                   main {
                       manifest.srcFile '../AndroidManifest.xml'
-                      java.srcDirs = ['../src']
+                      java.srcDirs = ['../src', 'src/stubs/java']
                       res.srcDirs = ['../res']
                   }
               }
@@ -81,7 +81,94 @@ jobs:
           include ':app'
           EOF
 
-          # Генерируем wrapper-конфиг напрямую
+          # Генерируем заглушки для скрытых системных API AOSP (android.media.* и android.hardware.display.*)
+          mkdir -p app/src/stubs/java/android/media
+          mkdir -p app/src/stubs/java/android/hardware/display
+          mkdir -p app/src/stubs/java/android/view
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioPort.java
+          package android.media;
+          public class AudioPort {
+              public AudioPortConfig activeConfig() { return null; }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioDevicePort.java
+          package android.media;
+          public class AudioDevicePort extends AudioPort {
+              public int type() { return 0; }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioPortConfig.java
+          package android.media;
+          public class AudioPortConfig {}
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioDevicePortConfig.java
+          package android.media;
+          public class AudioDevicePortConfig extends AudioPortConfig {}
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioMixPort.java
+          package android.media;
+          public class AudioMixPort extends AudioPort {}
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioPatch.java
+          package android.media;
+          public class AudioPatch {
+              public AudioPortConfig[] sources() { return new AudioPortConfig[0]; }
+              public AudioPortConfig[] sinks() { return new AudioPortConfig[0]; }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioSystem.java
+          package android.media;
+          public class AudioSystem {
+              public static final int FORCE_NONE = 0;
+              public static final int FORCE_SPEAKER = 1;
+              public static final int DEVICE_IN_FM_TUNER = 0x80000400;
+              public static final int DEVICE_OUT_WIRED_HEADSET = 0x4;
+              public static final int DEVICE_OUT_WIRED_HEADPHONE = 0x8;
+              public static int setForceUse(int usage, int config) { return 0; }
+              public static int getForceUse(int usage) { return 0; }
+              public static String getOutputDeviceName(int device) { return ""; }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/media/AudioManagerStubs.java
+          package android.media;
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/hardware/display/DisplayManagerGlobal.java
+          package android.hardware.display;
+          import android.view.DisplayInfo;
+          public class DisplayManagerGlobal {
+              public static DisplayManagerGlobal getInstance() { return null; }
+              public DisplayInfo getDisplayInfo(int displayId) { return null; }
+          }
+          EOF
+
+          cat << 'EOF' > app/src/stubs/java/android/view/DisplayInfo.java
+          package android.view;
+          public class DisplayInfo {
+              public int logicalWidth;
+              public int logicalHeight;
+          }
+          EOF
+
+          # Добавляем OnAudioPortUpdateListener в AudioManager если его нет
+          cat << 'EOF' > app/src/stubs/java/android/media/OnAudioPortUpdateListener.java
+          package android.media;
+          public interface OnAudioPortUpdateListener {
+              void onAudioPortListUpdate(AudioPort[] portList);
+              void onAudioPatchListUpdate(AudioPatch[] patchList);
+              void onServiceDied();
+          }
+          EOF
+
+          # Wrapper properties
           mkdir -p gradle/wrapper
           cat << 'EOF' > gradle/wrapper/gradle-wrapper.properties
           distributionBase=GRADLE_USER_HOME
